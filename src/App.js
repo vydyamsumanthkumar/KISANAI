@@ -27,7 +27,7 @@ function App() {
     setLoading(true);
     setResult(null);
 
-    const API_KEY ="YOUR_API_KEY_HERE";
+    const API_KEY ="AIzaSyAzgTMow8xyAaCh8RbRHztnF7Wxm4nT_2Y";
 
     const prompt = `You are an expert agricultural scientist. Analyze this ${cropType} crop image and identify any diseases.
     Respond ONLY in this exact JSON format (no extra text):
