@@ -7,7 +7,11 @@ function App() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const crops = ["Rice","Cotton","Chilli","Tomato","Maize","Sugarcane"];
+  // ✅ MORE CROPS ADDED
+  const crops = [
+    "Rice","Cotton","Chilli","Tomato","Maize","Sugarcane",
+    "Wheat","Groundnut","Soybean","Onion","Potato","Banana"
+  ];
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -20,6 +24,43 @@ function App() {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  // ✅ DOWNLOAD FUNCTION ADDED
+  const downloadResult = () => {
+    if (!result) return;
+    const text = `
+🌾 KisanAI - పంట వ్యాధి నివేదిక | Crop Disease Report
+=====================================================
+పంట రకం | Crop Type: ${cropType}
+తీవ్రత | Severity: ${result.severity}
+
+🦠 వ్యాధి | Disease:
+${result.disease_name_english}
+${result.disease_name_telugu}
+
+⚠️ కారణం | Cause:
+${result.cause_english}
+${result.cause_telugu}
+
+💊 చికిత్స | Treatment:
+${result.treatment_english}
+${result.treatment_telugu}
+
+🛡️ నివారణ | Prevention:
+${result.prevention_english}
+${result.prevention_telugu}
+
+=====================================================
+KisanAI - Built for Indian Farmers
+    `;
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `KisanAI_${cropType}_Report.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const analyzeImage = async () => {
@@ -42,34 +83,35 @@ function App() {
       "is_healthy": false
     }
     If crop is healthy, set is_healthy to true.`;
-try {
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.REACT_APP_GEMINI_API_KEY}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: prompt },
-            { inline_data: { mime_type: "image/jpeg", data: imageBase64 } }
-          ]
-        }]
-      })
+
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.REACT_APP_GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                { text: prompt },
+                { inline_data: { mime_type: "image/jpeg", data: imageBase64 } }
+              ]
+            }]
+          })
+        }
+      );
+
+      console.log("Status:", response.status);
+      const data = await response.json();
+      console.log("API Response:", JSON.stringify(data));
+
+      const text = data.candidates[0].content.parts[0].text;
+      const clean = text.replace(/```json|```/g, "").trim();
+      setResult(JSON.parse(clean));
+    } catch (err) {
+      console.log("Error:", err.message);
+      setResult({ error: "విశ్లేషణ విఫలమైంది. మళ్ళీ try చేయండి." });
     }
-  );
-
-  console.log("Status:", response.status);
-  const data = await response.json();
-  console.log("API Response:", JSON.stringify(data));
-
-  const text = data.candidates[0].content.parts[0].text;
-  const clean = text.replace(/```json|```/g, "").trim();
-  setResult(JSON.parse(clean));
-} catch (err) {
-  console.log("Error:", err.message);
-  setResult({ error: "విశ్లేషణ విఫలమైంది. మళ్ళీ try చేయండి." });
-}
     setLoading(false);
   };
 
@@ -157,9 +199,20 @@ try {
           <div className={`bg-white rounded-2xl shadow-md p-6 mb-6 border-l-4 ${
             result.is_healthy ? "border-green-500" : "border-red-500"
           }`}>
-            <h2 className="text-lg font-semibold text-gray-700 mb-4">
-              📋 ఫలితం | Result
-            </h2>
+
+            {/* ✅ DOWNLOAD BUTTON ADDED */}
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold text-gray-700">
+                📋 ఫలితం | Result
+              </h2>
+              <button
+                onClick={downloadResult}
+                className="bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-lg"
+              >
+                📥 Download Report
+              </button>
+            </div>
+
             <div className={`inline-block px-3 py-1 rounded-full text-white text-sm font-medium mb-4 ${
               result.is_healthy ? "bg-green-500" :
               result.severity === "High" ? "bg-red-500" :
@@ -188,6 +241,18 @@ try {
                 <p className="font-bold text-green-700">🛡️ నివారణ | Prevention</p>
                 <p className="text-gray-800">{result.prevention_english}</p>
                 <p className="text-gray-600 text-sm">{result.prevention_telugu}</p>
+              </div>
+
+              {/* ✅ FARMER TIP BOX ADDED */}
+              <div className="bg-orange-50 rounded-xl p-4 border border-orange-200">
+                <p className="font-bold text-orange-700">🏪 దుకాణానికి వెళ్ళేముందు | Before going to shop</p>
+                <p className="text-gray-700 text-sm mt-1">
+                  ఈ report download చేసుకుని fertilizer shop కి తీసుకెళ్ళండి.
+                  పై చికిత్సలో చెప్పిన మందులు అడగండి.
+                </p>
+                <p className="text-gray-500 text-xs mt-1">
+                  Download this report and show it at your nearest fertilizer shop.
+                </p>
               </div>
             </div>
           </div>
