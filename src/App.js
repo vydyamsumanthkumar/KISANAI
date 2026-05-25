@@ -27,8 +27,6 @@ function App() {
     setLoading(true);
     setResult(null);
 
-    const API_KEY =process.env.REACT_APP_GEMINI_API_KEY;
-
     const prompt = `You are an expert agricultural scientist. Analyze this ${cropType} crop image and identify any diseases.
     Respond ONLY in this exact JSON format (no extra text):
     {
